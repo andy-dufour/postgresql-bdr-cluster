@@ -38,6 +38,8 @@ found_nodes.each do |nodedata|
   end
 end
 
+directory '/etc/yum.repos.d'
+
 # install and setup Postgres 9.4 BDR
 postgres_bin_dir = '/usr/pgsql-9.4/bin'
 postgres_data_dir = '/var/lib/pgsql/9.4-bdr/data'
@@ -78,13 +80,31 @@ end
 # Configure databases for replication
 
 node['postgresql-bdr-cluster']['bdr_dbnames'].each do |dbname|
+  execute "create_user_#{dbname}" do
+    command %Q(#{postgres_bin_dir}/psql postgres -c "CREATE ROLE #{dbname} WITH PASSWORD '#{node['postgresql-bdr-cluster']['passwords'][dbname]}' LOGIN")
+    user 'postgres'
+    #not_if %Q(#{postgres_bin_dir}/psql postgres -tAc "SELECT 1 FROM pg_roles WHERE rolname='#{dbname}'")
+  end
+
   execute "create_db_#{dbname}" do
-    command "#{postgres_bin_dir}/createdb -U postgres #{dbname}"
+    command "#{postgres_bin_dir}/createdb -O #{dbname} #{dbname}"
     action :run
     user 'postgres'
     not_if "#{postgres_bin_dir}/psql postgres -c 'SELECT datname FROM pg_database' |grep #{dbname}"
     notifies :run, "execute[create_extension_btree_gist_#{dbname}]", :immediately
     notifies :run, "execute[create_extension_bdr_#{dbname}]", :immediately
+  end
+
+  execute "alter_db_#{dbname}" do
+    command %Q(#{postgres_bin_dir}/psql postgres -c "CREATE ROLE #{dbname} WITH PASSWORD '#{node['postgresql-bdr-cluster']['passwords'][dbname]}' LOGIN")
+    user 'postgres'
+    not_if %Q(#{postgres_bin_dir}/psql postgres -tAc "SELECT 1 FROM pg_roles WHERE rolname='#{dbname}'")
+  end
+
+  execute "create_user_#{dbname}" do
+    command %Q(#{postgres_bin_dir}/psql postgres -c "CREATE ROLE #{dbname} WITH PASSWORD '#{node['postgresql-bdr-cluster']['passwords'][dbname]}' LOGIN")
+    user 'postgres'
+    not_if %Q(#{postgres_bin_dir}/psql postgres -tAc "SELECT 1 FROM pg_roles WHERE rolname='#{dbname}'")
   end
 
   execute "create_extension_btree_gist_#{dbname}" do

@@ -1,12 +1,13 @@
-cluster_nodes_count = 3
+cluster_nodes_count = 2
 default['postgresql-bdr-cluster']['cluster_nodes'] = 1.upto(cluster_nodes_count).map { |i| "postgresql-#{i}.example.com" }
 
 # Provisiong driver settings
-default['postgresql-bdr-cluster']['provisioning']['driver'] = 'aws'
+default['postgresql-bdr-cluster']['provisioning']['driver'] = 'vagrant'
 
 # Vagrant settings
 default['chef-provisioning-vagrant']['vbox']['box'] = 'box-cutter/centos71'
-default['chef-provisioning-vagrant']['vbox']['ram'] = 512
+default['chef-provisioning-vagrant']['vbox']['url'] = ""
+default['chef-provisioning-vagrant']['vbox']['ram'] = 1024
 default['chef-provisioning-vagrant']['vbox']['cpus'] = 1
 default['chef-provisioning-vagrant']['vbox']['private_networks']['default'] = 'dhcp'
 
@@ -21,6 +22,10 @@ default['chef-provisioning-aws']['keypair_name'] = "#{ENV['USER']}@postgresql-bd
 
 # Postgres settings
 default['postgresql-bdr-cluster']['bdr_dbnames'] = %w(opscode_chef bifrost opscode_reporting oc_id)
+default['postgresql-bdr-cluster']['passwords']['opscode_chef'] = 'snakepliskin'
+default['postgresql-bdr-cluster']['passwords']['bifrost'] = 'challengeaccepted'
+default['postgresql-bdr-cluster']['passwords']['opscode_reporting'] = 'test'
+default['postgresql-bdr-cluster']['passwords']['oc_id'] = 'snakepliskin'
 
 default['postgresql']['dir'] = '/var/lib/pgsql/9.4-bdr/data'
 
@@ -65,6 +70,8 @@ default['postgresql']['config']['log_min_messages'] = 'debug1'
 # default['postgresql']['config']['log_line_prefix'] = 'd=%d p=%p a=%a%q '
 default['postgresql']['config']['bdr.log_conflicts_to_table'] = true
 
+default['private_chef']['opscode-erchef']['sql_user'] = "opscode_chef"
+default['private_chef']['opscode-erchef']['sql_password'] = "snakepliskin"
 
 default['postgresql']['pg_hba'] = [
   {:type => 'local', :db => 'all', :user => 'postgres', :addr => nil, :method => 'ident'},
